@@ -1,0 +1,6 @@
+principle = input("Enter Principle amount:")
+rate = input("\nEnter rate of interest:")
+time = input("\nEnter Time:")
+num = input("\nEnter number of time compound intrest:")
+CI = principle * (pow((1 + rate / num), num*time)) 
+print("Compound interest is {0}".format(CI)) 
