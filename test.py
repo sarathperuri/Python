@@ -1,7 +1,7 @@
-echo"test"
+print ('test')
 
 #another
 
-echo "another test"
+print ('another_test')
 
-git merge conflict test
+# git merge conflict test
