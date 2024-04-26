@@ -4,5 +4,5 @@ echo"test"
 
 echo "another test"
 
-
+git merge conflict test
 
