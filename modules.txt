@@ -1,0 +1,4 @@
+# importing module calc.py
+import calc
+
+print(calc.sum(10, 2))

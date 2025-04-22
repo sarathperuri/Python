@@ -1,0 +1,8 @@
+# program illustrates the use of docstrings
+
+def helloWorld():
+	""" This program prints out hello world """ #This is a docstring comment
+	print("Hello World")
+
+helloWorld()
+

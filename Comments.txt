@@ -1,0 +1,34 @@
+#Single line comments
+
+# This is a comment
+# Print “GeeksforGeeks” to console
+print("GeeksforGeeks")
+
+
+
+a, b = 1, 3 # Declaring two integers
+sum = a + b # adding two integers
+print(sum) # displaying the output
+
+
+# Multi-line string as a comment:
+
+"""
+This would be a multiline comment in Python that
+spans several lines and describes geeksforgeeks.
+A Computer Science portal for geeks. It contains
+well written, well thought
+and well-explained computer science
+and programming articles,
+quizzes and more.
+…
+"""
+print("GeeksForGeeks")
+
+'''This article on geeksforgeeks gives you a
+perfect example of
+multi-line comments'''
+
+print("GeeksForGeeks")
+
+
