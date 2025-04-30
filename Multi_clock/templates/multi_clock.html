@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>World Clock Dashboard</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#0f0f0f">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Rubik&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --text: #ffffff;
+      --accent: #00ffe7;
+      --card-bg: rgba(255,255,255,0.05);
+    }
+    body.light {
+      --bg: #f5f5f5;
+      --text: #1a1a1a;
+      --accent: #0066ff;
+      --card-bg: rgba(0,0,0,0.05);
+    }
+    * { box-sizing: border-box; margin:0; padding:0 }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rubik', sans-serif;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+      transition: background .3s, color .3s;
+    }
+    header {
+      padding: 20px; text-align: center;
+      backdrop-filter: blur(8px);
+      background: var(--card-bg);
+      box-shadow: 0 0 10px var(--accent);
+    }
+    header h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--accent);
+      text-shadow: 0 0 10px var(--accent);
+    }
+    .controls {
+      display: flex; justify-content: center; gap: 1rem; margin: 1rem 0;
+    }
+    .controls > * { padding: 0.5rem; font-size: 1rem; }
+    main {
+      flex:1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+      gap: 2rem;
+      padding: 0 2rem 2rem;
+      max-width: 1200px; margin: auto;
+    }
+    .clock-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 20px rgba(0,255,231,0.2);
+      position: relative;
+      transition: transform .3s;
+    }
+    .clock-card:hover { transform: translateY(-5px) }
+    .timezone {
+      color: var(--accent);
+      margin-bottom: .75rem;
+      font-weight: bold;
+    }
+    .time {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.75rem;
+      text-shadow: 0 0 8px var(--text);
+    }
+    .remove-btn {
+      position: absolute;
+      top: .5rem; right: .5rem;
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    footer {
+      text-align:center;
+      padding:1rem;
+      background: rgba(0,0,0,0.1);
+      font-size:.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌐 World Clock Dashboard</h1>
+  </header>
+
+  <div class="controls">
+    <label>
+      <input type="checkbox" id="theme-toggle">
+      Dark / Light
+    </label>
+    <input type="text" id="tz-input" placeholder="e.g. Europe/Berlin">
+    <button id="add-tz">Add Time Zone</button>
+  </div>
+
+  <main id="clocks-container"></main>
+
+  <footer>
+    &copy; 2025 WorldClock App | Powered by JavaScript PWA
+  </footer>
+
+  <script>
+    // --- Helpers ---
+    const qs = s => document.querySelector(s);
+    const create = (tag, cls='') => Object.assign(document.createElement(tag), { className: cls });
+
+    // --- State & Persistence ---
+    const defaultTZ = [
+      { name:'Local Time', zone:'local', fmt:'12' },
+      { name:'UTC',         zone:'UTC',   fmt:'24' }
+    ];
+    let timezones = JSON.parse(localStorage.getItem('timezones')) || defaultTZ;
+    let theme = localStorage.getItem('theme') || 'dark';
+
+    // --- Theme Toggle ---
+    const checkbox = qs('#theme-toggle');
+    function applyTheme() {
+      document.body.classList.toggle('light', theme==='light');
+      checkbox.checked = (theme==='light');
+    }
+    checkbox.addEventListener('change',()=>{
+      theme = checkbox.checked?'light':'dark';
+      localStorage.setItem('theme', theme);
+      applyTheme();
+    });
+    applyTheme();
+
+    // --- Clock Cards ---
+    const container = qs('#clocks-container');
+    function saveTZ() {
+      localStorage.setItem('timezones', JSON.stringify(timezones));
+    }
+    function removeTZ(idx) {
+      if (timezones[idx].zone === 'local') {
+        alert("You can't remove the local time card.");
+        return;
+      }
+      timezones.splice(idx,1);
+      saveTZ();
+      renderClocks();
+    }
+
+    function addTZ(tzStr) {
+      try {
+        // validate
+        new Date().toLocaleString('en-US',{timeZone:tzStr});
+        timezones.push({ name: tzStr, zone:tzStr, fmt:'24' });
+        saveTZ();
+        renderClocks();
+      } catch { alert('Invalid IANA Time Zone'); }
+    }
+    qs('#add-tz').onclick = () => {
+      const val=qs('#tz-input').value.trim();
+      if(val) addTZ(val);
+      qs('#tz-input').value='';
+    };
+
+    function createCard(tz, idx) {
+      const card = create('div','clock-card');
+      const rem = create('button','remove-btn');
+      rem.innerHTML='✕';
+      rem.onclick = ()=>removeTZ(idx);
+      card.appendChild(rem);
+
+      const label = create('div','timezone');
+      label.textContent = tz.name;
+      const tm    = create('div','time');
+      tm.id = `clock-${idx}`;
+
+      card.append(label, tm);
+      return card;
+    }
+
+    function renderClocks() {
+      container.innerHTML = '';
+      timezones.forEach((tz,i)=> container.appendChild(createCard(tz,i)));
+    }
+
+    // --- Clock Update ---
+    function updateClocks() {
+      timezones.forEach((tz,i)=>{
+        const now = tz.zone==='local'
+                  ? new Date()
+                  : new Date(new Date().toLocaleString('en-US',{timeZone:tz.zone}));
+        let h=now.getHours(), m=now.getMinutes(), s=now.getSeconds();
+        m=String(m).padStart(2,'0'); s=String(s).padStart(2,'0');
+        let out;
+        if(tz.fmt==='12') {
+          const ap = h>=12?'PM':'AM';
+          h = h%12||12;
+          out = `${String(h).padStart(2,'0')}:${m}:${s} ${ap}`;
+        } else {
+          out = `${String(h).padStart(2,'0')}:${m}:${s}`;
+        }
+        qs(`#clock-${i}`).textContent = out;
+      });
+    }
+
+    // --- PWA: Service Worker Registration ---
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/static/sw.js');
+    }
+
+    // --- Init ---
+    renderClocks();
+    updateClocks();
+    setInterval(updateClocks,1000);
+  </script>
+</body>
+</html>
